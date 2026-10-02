@@ -1,0 +1,29 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Role-base-authintication-and-access-controll application.",
+  "keywords": [
+    "RBAC",
+    "Nodejs",
+    "Javascript",
+    "React.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "ChaiBackend"
+  },
+  "author": "Samarjeet",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
