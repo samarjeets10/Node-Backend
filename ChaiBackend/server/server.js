@@ -1,7 +1,6 @@
 require('dotenv').config();
 // require('dotenv').config({path: './env'});
 
-
 /*
     while using the import module syntax :
 
@@ -14,8 +13,7 @@ const app = require('./src/app');
 const connectDB = require('./src/config/db');
 const connectionInstance = require('./src/config/db');
 
-const PORT = process.env.SERVER_PORT || 3001;
-
+const PORT = process.env.SERVER_PORT || 8000;
 
 ;( async () => {
 
