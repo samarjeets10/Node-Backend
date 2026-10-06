@@ -19,7 +19,4 @@ app.use(cors({
 
 app.use(cookieParser());
 
-
-
-
 module.exports = app;
