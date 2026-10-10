@@ -1,4 +1,4 @@
-const asyncHandler = (requestHandler) => async (req, res, next) => {
+/* const asyncHandler = (requestHandler) => async (req, res, next) => {
 
     try {
         await requestHandler(req, res, next);
@@ -11,18 +11,14 @@ const asyncHandler = (requestHandler) => async (req, res, next) => {
 } 
 
 module.exports =  asyncHandler;
-
-
-/*
-    Using the Promis then catch method :
-
-    const asyncHandler = (requestHandler) => {
-        (req, res, next) => {
-            Promis.resolve(requesthandler(req, res, next)).catch(error) => next((error))    
-        }
-    }
-
 */
+
+const asyncHandler = (requestHandler) => (req, res, next) => {
+    Promise.resolve(requestHandler(req, res, next)).catch(next);
+};
+
+module.exports =  asyncHandler;
+
 
 
 

@@ -1,11 +1,10 @@
-const { response } = require("express");
 const asyncHandler = require("../utils/asyncHandler");
 const { apiError } = require("../utils/apiError");
-const { apiResponse } = require('../utils/apiResponse')
+const { apiResponse } = require('../utils/apiResponse');
 const UserModel =  require('../models/user.model');
-const uploadOnCloudinary = require('../utils/cloudinary')
+const uploadOnCloudinary = require('../utils/cloudinary');
 
-const registerUser = asyncHandler( async (req, res) => {
+const registerUser = asyncHandler( async (req, res, next) => {
     // get user details from the frontend/postman.
     // validations - i.e not empty etc.
     // check is user already exists: username, email
@@ -22,32 +21,36 @@ const registerUser = asyncHandler( async (req, res) => {
         fullName,
         email,
         password
-    } = req.body;
+    } = req.body ?? {};
 
-    console.log("email :", email);
+    // console.log("email :", email);
 
 
     if (
-        [fullName, username, email, password].some((field) => field.trim() === "")
+        [fullName, username, email, password].some(
+            (field) => typeof field !== "string" || field.trim() === ""
+        )
     ) {
         throw new apiError(400, "All fields are required");
     }
 
 
-    const existedUser = UserModel.findOne({
+    const existedUser = await UserModel.findOne({
         $or: [{ username }, { email }],
-    }, console.log("username:", username, " email :", email));
+    });
 
 
     if (existedUser) {
         throw new apiError(409, "User with this email or username already exists!")
     }
 
-    // multer provies this files for the file uploads(avatar, coverImage) :
-    const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    // console.log(req.files);
 
-    if (!avatorLocalPath) {
+    // multer provies this files for the file uploads(avatar, coverImage) :
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+
+    if (!avatarLocalPath) {
         throw new apiError(400, "Avator file is required.");
     };
 
