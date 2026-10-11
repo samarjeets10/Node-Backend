@@ -4,6 +4,25 @@ const { apiResponse } = require('../utils/apiResponse');
 const UserModel =  require('../models/user.model');
 const uploadOnCloudinary = require('../utils/cloudinary');
 
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+
+        const user = await UserModel.findById(userId);
+
+        const accessToken = user.generateAccessToken();
+        const refreshToken = await user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false});
+
+        return { accessToken, refreshToken };
+
+    } catch (error) {
+        throw new apiError(500, "Something went wrong while generating referesh and access tokens.");
+    }
+}
+
+
 const registerUser = asyncHandler( async (req, res, next) => {
     // get user details from the frontend/postman.
     // validations - i.e not empty etc.
@@ -86,8 +105,93 @@ const registerUser = asyncHandler( async (req, res, next) => {
     return res.status(201).json(
         new apiResponse(200, createdUser, "User registered successfully!")
     );
-
-
 });
 
-module.exports = registerUser;
+
+
+const loginUser = asyncHandler(async (req, res) => {
+
+    // req body : data
+    // username or email based login 
+    // find the user
+    // password check 
+    // access and refresh token generation 
+    // send and set the tokens into cookies
+
+    const {
+        email,
+        password,
+        username
+    } = req.body;
+
+    if (!username || !email) {
+        throw new apiError(400, "Username or Paassword is required.");
+    };
+
+    const user = await UserModel.findOne({
+        $or: [{ username }, { email }]
+    });
+
+    if (!user) {
+        throw new apiError(404, "User does not exists with this username or email")
+    };
+
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+       throw new apiError(401, "Invalid user credentials!") 
+    };
+
+    await generateAccessAndRefreshTokens(user._id);
+
+    const loggedInUser = UserModel.findById(user_id).select("-password -refreshToken");
+
+    // cookies only modifiable from the server not from the frontend.
+    const options = {
+        httpOnly: true,
+        secure: true
+    };
+
+    // setting access and refresh tokens to the cookies.
+    return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options).json(
+        new apiResponse(
+            200,
+            {
+                user: loggedInUser, accessToken, refreshToken
+            },
+            "User Logged in Successfully!"
+        )
+    )
+});
+
+
+const logoutUser = asyncHandler(async (req, res) => {
+    // clear refresh and access token cookies.
+    await UserModel.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+
+        {
+            new: true
+        }
+    );
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    };
+
+    return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new apiResponse(200, {}, "User logged out successfully."))
+    
+});
+
+
+module.exports = {
+    registerUser,
+    loginUser,
+    logoutUser
+};
