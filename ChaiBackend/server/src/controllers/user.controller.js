@@ -2,6 +2,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const { apiError } = require("../utils/apiError");
 const { apiResponse } = require('../utils/apiResponse');
 const UserModel =  require('../models/user.model');
+const jwt = require('jsonwebtoken');
 const uploadOnCloudinary = require('../utils/cloudinary');
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -124,10 +125,17 @@ const loginUser = asyncHandler(async (req, res) => {
         username
     } = req.body;
 
-    if (!username || !email) {
-        throw new apiError(400, "Username or Paassword is required.");
-    };
 
+    if (!(username || email)) {
+        throw new apiError(400, "Username or Password is required.");
+    }
+
+    // if (!username && !email) {
+    //     throw new apiError(400, "Username or Paassword is required.");
+    // };
+
+
+    // check user with this username or email exists/regeistered or not.
     const user = await UserModel.findOne({
         $or: [{ username }, { email }]
     });
@@ -142,9 +150,9 @@ const loginUser = asyncHandler(async (req, res) => {
        throw new apiError(401, "Invalid user credentials!") 
     };
 
-    await generateAccessAndRefreshTokens(user._id);
+    const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id);
 
-    const loggedInUser = UserModel.findById(user_id).select("-password -refreshToken");
+    const loggedInUser = await UserModel.findById(user._id).select("-password -refreshToken");
 
     // cookies only modifiable from the server not from the frontend.
     const options = {
@@ -185,13 +193,75 @@ const logoutUser = asyncHandler(async (req, res) => {
         secure: true
     };
 
-    return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new apiResponse(200, {}, "User logged out successfully."))
+    return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new apiResponse(200, {}, "User logged out successfully."));
     
 });
+
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+
+   try {
+        // access refresh token from cooki or form body.
+        const incomingRefreshToken =  req.cookies.refreshToken || req.body.refreshToken; 
+
+        if (!incomingRefreshToken) {
+            throw new apiError(401, "Unauthorized request.");
+        }
+
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET,
+        );
+
+        const user = await UserModel.findById(decodedToken?._id);
+
+        if (!user) {
+            throw new apiError(401, "Invalid Refresh Token.");
+        }
+
+        if (incomingRefreshToken !== user?.refreshToken) {
+            throw new apiError(401, "Refresh Token is expired or used.");
+        }
+
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+
+
+        const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+        return res.status(200).cookie("accessToken", accessToken).cookie("refreshToken", newRefreshToken).json(new apiResponse(
+            200,
+            {
+                accessToken, refreshToken: newRefreshToken
+            },
+            "Access token refreshed/successful"
+        ))
+
+   } catch (error) {
+        throw new Error(401, error.message || "Invalid refresh token.")
+   }
+    
+})
 
 
 module.exports = {
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    refreshAccessToken
 };
+
+
+/*
+
+- Access Token : Short living generally expires in a short period of time.
+
+- Refresh Token : it is a long living token and this is shored in the database and and also called as the session storage.
+
+----- compares the saved session token from the frontend with the refresh token saved or stored in the database and if it is match it will start the session again  without telling the user to login again by  generating a new access token. -------
+
+
+
+*/

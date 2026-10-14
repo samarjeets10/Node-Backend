@@ -69,7 +69,7 @@ userSchema.pre("save", async function () {
 
 // Password comparison or verification agenst saved hashed password from the database.
 userSchema.methods.isPasswordCorrect = async function (password) {
-    return await bcrypt.compare(password, this.password);   // compares the entered passwor d and the stored hashed passowrd/hash value.
+    return await bcrypt.compare(password, this.password);   // compares the entered password and the stored hashed passowrd/hash value.
 };
 
 // Generating Access tokens:
