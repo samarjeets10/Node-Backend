@@ -9,7 +9,7 @@ const PORT = process.env.SERVER_PORT || 8000;
     try {
 
         // database connection :
-        dbConnect();
+        await dbConnect();
 
         app.on('error', (error) => {
             console.log("server error :", error.message);
@@ -26,4 +26,3 @@ const PORT = process.env.SERVER_PORT || 8000;
     }
 
 })();
-

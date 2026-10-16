@@ -18,7 +18,7 @@ app.use(cookieParser());
 
 // routes declaration :
 
-app.use('/api/v1/users', authRoutes);
+app.use('/api/users', authRoutes);
 
 
 module.exports = app;

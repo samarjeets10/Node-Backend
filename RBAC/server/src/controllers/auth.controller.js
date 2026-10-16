@@ -5,63 +5,43 @@ const jwt = require('jsonwebtoken');
 const registerUser = async (req, res) => {
 
     try {
-
+        
         const {
-            username, 
-            email, 
+            username,
+            email,
             password,
             role
         } = req.body;
 
 
-        // check the user is already exists :
         const existedUser = await UserModel.findOne({
-            $or: [{ username, email }]
-        })
-
+            $or: [{ username }, { email }]
+        });
 
         if (existedUser) {
-            console.log("user is already exists with this usename or password!");
-            throw new Error;
+            return res.status(409).json({
+                message: "User already exists with this username or email."
+            });
         }
-
-        // hash passwors :
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // creating new user and saving it in the database:
-        const newUser = new User({ username, email, password: hashedPassword, role });
-
-        //or:
-
-        // const user = await UserModel.create({
-        //     username: username.toLowerCase(),
-        //     email,
-        //     password,
-        //     role
-        // })
+        const newUser = new UserModel({ username, email, password: hashedPassword, role });
 
         await newUser.save();
 
         return res.status(201).json({
-            message: `User registered successfully : user : ${username}`
+            message: `User registered successfully: ${username}`
         });
-
-
-
+        
     } catch (error) {
-        console.log(error.message);
-        return res.status(500).json({
-            message: "Somethig went wrong while creating the entry in database!!"
-        });
+        console.error("Failed to register user:", error);
     }
-
-}
+};
 
 const loginUser = async (req, res) => {
 
     try {
-
           const {
             email,
             password,
@@ -81,7 +61,7 @@ const loginUser = async (req, res) => {
 
         // compare the password with the hased password :
 
-        const isPassworsMatch = await bcrypt.compare(password, user.passowrd);
+        const isPassworsMatch = await bcrypt.compare(password, user.password);
 
         if (!isPassworsMatch) {
             return res.status(400).json({
