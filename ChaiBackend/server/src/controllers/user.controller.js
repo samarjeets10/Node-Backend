@@ -243,6 +243,78 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new Error(401, error.message || "Invalid refresh token.")
    }
     
+});
+
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+
+    const {
+        oldPassword,
+        newPassword,
+        confPassword
+    } = req.body;
+
+
+    if (!(confPassword === newPassword)) {
+        throw new apiError(400, "Password doesnot match with the new passowrd.");
+    }
+
+    const user = await UserModel(req.user?._id);
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    if (!isPasswordCorrect) {
+        throw new apiError(400, "Invalid old password");
+    };
+
+    user.password = newPassword;
+
+    await user.save({validateBeforeSave: false});
+
+    return res.status(200).json(new apiResponse(
+        200, 
+        {},
+        "Password changed successfully"
+    ))
+
+});
+
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    
+    return res.status(200).json(200, req.user, "current user fecteched successfully.");
+
+});
+
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+
+    const {
+        fullName,
+        email
+    } = req.body;
+
+
+    if (!fullName || !email) {
+        throw new apiError(400, "All fields are required.")
+    }
+
+
+    const user = await UserModel.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName,
+                email: email
+            }
+        },
+        { new: true }
+    ).select("-password");
+
+
+    return res.status(200).json(
+        new apiResponse(200, user, "Account details updated successfully")
+    );
+
 })
 
 
@@ -250,7 +322,10 @@ module.exports = {
     registerUser,
     loginUser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    getCurrentUser,
+    changeCurrentPassword,
+    updateAccountDetails
 };
 
 
