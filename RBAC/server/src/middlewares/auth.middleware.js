@@ -1,36 +1,33 @@
 const jwt = require('jsonwebtoken');
 
-
 const verifyToken = (req, res, next) => {
 
-    let token;
-    let authHeader = req.headers.Authoriation || req.headers.authorization;
+    const token = req.cookies?.accessToken;
 
-    if (authHeader && authHeader.startWith("Bearer")) {
-        token = authHeader.split(" ")[1];
-
-        if (!token) {
-            return res.status(401).json({
-                message: "No token , authorization denied"
-            });
-        }
+    if (!token) {
+        return res.status(401).json({
+            message: "Authentication required. please login."
+        })
     }
 
     try {
 
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-        req.user = decoded;
-        console.log("The decoded user is : ", req.user);    
+        req.user = {
+            id: decoded.id,
+            role: decoded.role
+        };
+
         next();
 
     } catch (error) {
-        return res.status(400).json({
-            message: "Token is not valid"
+        return res.status(401).json({
+            message: "Invalid or expired token."
         });
     }
 
-};
+}
 
 
 module.exports = verifyToken;
