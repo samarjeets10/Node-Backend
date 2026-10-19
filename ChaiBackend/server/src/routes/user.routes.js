@@ -4,7 +4,7 @@ const {
     loginUser, 
     logoutUser, 
     refreshAccessToken 
-} = require('../controllers/user.controller');
+} = require('../controllers/auth.controller');
 const upload = require('../middlewares/multer.middleware');
 const verifyJWT = require('../middlewares/auth.middleware');
 
